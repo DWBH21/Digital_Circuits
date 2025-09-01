@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karnaugh Map Solver</title>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 32px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        p {
+            text-align: center;
+            color: #4b5563;
+            margin-bottom: 2rem;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        label {
+            font-weight: 500;
+        }
+        select {
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            font-size: 0.875rem;
+            padding: 0.25rem;
+        }
+        button {
+            background-color: #3b82f6;
+            color: #fff;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        .hidden {
+            display: none;
+        }
+        .truth-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+        table {
+            border-collapse: collapse;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 1rem;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            font-weight: bold;
+        }
+        th {
+            border-top: 2px solid #4b5563;
+            border-bottom: 2px solid #4b5563;
+            text-transform: uppercase;
+            font-size: 1.125rem;
+        }
+        th:first-child, td:first-child {
+            border-left: 2px solid #4b5563;
+            border-right: 2px solid #4b5563;
+        }
+        th:nth-last-child(2), td:nth-last-child(2) {
+            border-right: 2px solid #4b5563;
+        }
+        th:last-child, td:last-child {
+            border-right: 2px solid #4b5563;
+        }
+        tr:last-child td {
+            border-bottom: 2px solid #4b5563;
+        }
+        tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+        .kmap-cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d1d5db;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 6px;
+            position: relative;
+        }
+        .kmap-cell-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: black;
+        }
+        .kmap-cell-value.is-x {
+            color: #a0a0a0;
+        }
+        .kmap-cell-minterm {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+        .kmap-grid-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        .kmap-grid {
+            display: grid;
+            gap: 4px;
+            padding: 8px;
+            background-color: #f3f4f6;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+            border: 1px solid #d1d5db;
+        }
+        .kmap-5var {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .kmap-5var {
+                flex-direction: row;
+                gap: 2rem;
+            }
+        }
+        .kmap-5var h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .solution-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .output-section {
+            width: 100%;
+            text-align: center;
+        }
+        .output-section h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .equation-box {
+            font-size: 1.5rem;
+            font-family: monospace;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            color: #1f2937;
+        }
+        .kmap-cell-header {
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.875rem;
+            padding: 0.5rem;
+        }
+        .group-red {
+            border: 2px solid red !important;
+        }
+        .group-blue {
+            border: 2px solid blue !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Karnaugh Map Solver</h1>
+        <p>Generate a truth table and K-Map to find a simplified SOP equation.</p>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="num-variables">Variables (n):</label>
+                <select id="num-variables">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            <button onclick="generateTable()">Generate Table</button>
+            <button onclick="updateAllOutputs('1')">Set All to 1</button>
+            <button onclick="updateAllOutputs('0')">Set All to 0</button>
+            <button onclick="updateAllOutputs('X')">Set All to X</button>
+        </div>
+
+        <div id="main-content" class="hidden">
+            <!-- Truth Table -->
+            <h2>Truth Table</h2>
+            <div class="truth-table-wrapper">
+                <table id="truth-table">
+                    <thead><tr></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- K-Map -->
+            <h2>Karnaugh Map</h2>
+            <div id="kmap-container" class="kmap-grid-container"></div>
+
+            <!-- Solution -->
+            <div class="solution-wrapper">
+                <button onclick="solveKmap()">Solve K-Map</button>
+                <div class="output-section">
+                    <h3>Simplified SOP Equation</h3>
+                    <div id="sop-equation" class="equation-box">
+                        <span style="color: #6b7280;">Solve the K-map to see the equation.</span>
+                    </div>
+                    <h3>Simplified POS Equation</h3>
+                    <div id="pos-equation" class="equation-box">
+                        <span style="color: #6b7280;">POS not included in this version.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('num-variables').value = 4;
+            generateTable();
+        });
+
+        const numVar = document.getElementById('num-variables');
+        const tTable = document.getElementById('truth-table');
+        const kmapDiv = document.getElementById('kmap-container');
+        const sopOut = document.getElementById('sop-equation');
+        const mainDiv = document.getElementById('main-content');
+        let n = 4;
+        let outputs = [];
+        let kmapCells = [];
+        const grayMap = {'00': 0, '01': 1, '11': 3, '10': 2, '0': 0, '1': 1};
+
+        function generateTable() {
+            n = parseInt(numVar.value);
+            mainDiv.classList.remove('hidden');
+            const numRows = Math.pow(2, n);
+            outputs = Array(numRows).fill('0');
+            kmapCells = [];
+
+            let header = '<tr><th>#</th>';
+            for (let i = 0; i < n; i++) {
+                header += `<th>${String.fromCharCode(65 + i)}</th>`;
+            }
+            header += `<th>F</th></tr>`;
+            tTable.querySelector('thead tr').innerHTML = header;
+
+            let body = '';
+            for (let i = 0; i < numRows; i++) {
+                const binary = i.toString(2).padStart(n, '0');
+                body += `<tr><td>${i}</td>`;
+                for (let j = 0; j < n; j++) {
+                    body += `<td>${binary[j]}</td>`;
+                }
+                body += `<td><select onchange="updateOutput(${i}, this.value)">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="X">X</option>
+                </select></td></tr>`;
+            }
+            tTable.querySelector('tbody').innerHTML = body;
+            generateKmapGrid();
+        }
+
+        function updateOutput(index, value) {
+            outputs[index] = value;
+            generateKmapGrid();
+        }
+
+        function updateAllOutputs(value) {
+            outputs.fill(value);
+            document.querySelectorAll('#truth-table tbody select').forEach(select => {
+                select.value = value;
+            });
+            generateKmapGrid();
+        }
+
+        function generateKmapGrid() {
+            kmapDiv.innerHTML = '';
+            kmapCells = [];
+            let rows = 4, cols = 4;
+            let rowLabels = ['00', '01', '11', '10'], colLabels = ['00', '01', '11', '10'];
+
+            if (n === 2) {
+                rows = 2; cols = 2;
+                rowLabels = ['0', '1'];
+                colLabels = ['0', '1'];
+            } else if (n === 3) {
+                rows = 2; cols = 4;
+                rowLabels = ['0', '1'];
+            }
+
+            const getVarLabel = (vars, value) => {
+                return vars.split('').map((char, i) => 
+                    value[i] === '0' ? `${char}'` : char
+                ).join('');
+            };
+
+            const createKmap = (offset, aVar) => {
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'kmap-grid-container-inner';
+                
+                if (n === 5) {
+                    gridContainer.innerHTML = `<h3 style="margin-bottom: 0;">${aVar}</h3>`;
+                }
+
+                const grid = document.createElement('div');
+                grid.className = 'kmap-grid';
+                grid.style.gridTemplateColumns = `repeat(${cols + 1}, minmax(0, 1fr))`;
+                grid.style.gridTemplateRows = `repeat(${rows + 1}, minmax(0, 1fr))`;
+
+                const varMap = {2: ['A', 'B'], 3: ['A', 'BC'], 4: ['AB', 'CD'], 5: ['BC', 'DE']};
+                const [rowVars, colVars] = varMap[n];
+
+                grid.innerHTML = '<div class="kmap-cell-header"></div>';
+
+                colLabels.forEach(col => {
+                    grid.innerHTML += `<div class="kmap-cell-header">${getVarLabel(colVars, col)}</div>`;
+                });
+
+                for (let r = 0; r < rows; r++) {
+                    grid.innerHTML += `<div class="kmap-cell-header">${getVarLabel(rowVars, rowLabels[r])}</div>`;
+                    for (let c = 0; c < cols; c++) {
+                        let index;
+                        if (n === 2) index = (r << 1) | c;
+                        else if (n === 3) index = (r << 2) | grayMap[colLabels[c]];
+                        else if (n === 4) index = (grayMap[rowLabels[r]] << 2) | grayMap[colLabels[c]];
+                        else if (n === 5) index = offset + (grayMap[rowLabels[r]] << 2) | grayMap[colLabels[c]];
+
+                        const cell = document.createElement('div');
+                        cell.className = 'kmap-cell';
+                        cell.innerHTML = `
+                            <span class="kmap-cell-minterm">${index}</span>
+                            <span class="kmap-cell-value ${outputs[index] === 'X' ? 'is-x' : ''}">${outputs[index]}</span>
+                        `;
+                        kmapCells.push(cell);
+                        grid.appendChild(cell);
+                    }
+                }
+                gridContainer.appendChild(grid);
+                return gridContainer;
+            };
+
+            if (n === 5) {
+                kmapDiv.className = 'kmap-5var';
+                kmapDiv.appendChild(createKmap(0, 'A=0'));
+                kmapDiv.appendChild(createKmap(16, 'A=1'));
+            } else {
+                kmapDiv.className = 'kmap-grid-container';
+                kmapDiv.appendChild(createKmap(0));
+            }
+        }
+        
+        function solveKmap() {
+            // Your custom K-map simplification logic goes here.
+            // You can use the new classes to highlight the groups:
+            // For example, to highlight minterms 0 and 1, you would do:
+            // kmapCells[0].classList.add('group-red');
+            // kmapCells[1].classList.add('group-red');
+            
+            // Your algorithm should then find the best groupings and generate the simplified SOP equation.
+            
+            // To update the display, you would use:
+            // sopOut.textContent = 'Your simplified equation here';
+        }
+    </script>
+</body>
+</html>
