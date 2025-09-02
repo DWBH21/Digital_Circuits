@@ -393,79 +393,17 @@
             }
         }
         
-        async function solveKmap() {
-            sopOut.innerHTML = '<span style="color: #6b7280;">Solving...</span>';
-        
-            // 1. Gather the on-set and don't-care minterms from the UI
-            const onSet = [];
-            const dontCares = [];
-            for (let i = 0; i < outputs.length; i++) {
-                if (outputs[i] === '1') {
-                    onSet.push(i);
-                } else if (outputs[i] === 'X') {
-                    dontCares.push(i);
-                }
-            }
-
-            // 2. Prepare the data to send to the Java backend
-            const requestData = {
-                noVars: n,
-                onSet: onSet,
-                dontCares: dontCares
-            };
-
-            try {
-                // 3. Send the data to the server and wait for the response
-                const response = await fetch('http://localhost:8080/solve', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                // 4. Update the UI with the solution
-                sopOut.textContent = result.sop || '1'; // Handle case for all 1s
-
-                kmapCells.forEach(cell => {
-                    cell.style.border = '1px solid #d1d5db';
-                });
-
-                const groupColors = ['#e57373', '#81c784', '#64b5f6', '#fff176', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292'];
-                let colorIndex = 0;
-
-                for (const groupKey in result.groups) {
-                const mintermsInGroup = result.groups[groupKey];
-                const color = groupColors[colorIndex % groupColors.length];
-
-                mintermsInGroup.forEach(minterm => {
-                    // Ignore out-of-range indices silently
-                    if (minterm < 0 || minterm >= outputs.length) return;
-
-                    // Find the kmap-cell for this minterm (by the embedded label)
-                    const cell = kmapCells.find(c => {
-                    const mintermSpan = c.querySelector('.kmap-cell-minterm');
-                    return mintermSpan && parseInt(mintermSpan.textContent, 10) === minterm;
-                    });
-
-                    if (cell) {
-                    cell.style.border = `3px solid ${color}`;
-                    }
-                });
-
-                colorIndex++;
-            }
-
-            } catch (error) {
-                sopOut.innerHTML = `<span style="color: #ef4444;">Error: Could not connect to the local solver. Is the Java server running?</span>`;
-                console.error('Error solving K-map:', error);
-            }
+        function solveKmap() {
+            // Your custom K-map simplification logic goes here.
+            // You can use the class to highlight groups:
+            // For example, to highlight minterms 0 and 1, you would do:
+            // kmapCells[0].classList.add('group-highlight');
+            // kmapCells[1].classList.add('group-highlight');
+            
+            // Your algorithm should then find the best groupings and generate the simplified SOP equation.
+            
+            // To update the display, you would use:
+            // sopOut.textContent = 'Your simplified equation here';
         }
     </script>
 </body>

@@ -19,7 +19,7 @@ public class Main {
         dontCares.forEach(d -> initialMinterms.add(new Minterm(d, noVars)));
 
         // --- 3. Generate All Prime Implicants ---
-        List<Minterm> primeImplicants = QM_Minimization.getPrimeImplicants(initialMinterms);
+        List<Minterm> primeImplicants = QM_Minimization_old.getPrimeImplicants(initialMinterms);
 
         System.out.println("--- Step 1: All Prime Implicants Found ---");
         for (int i = 0; i < primeImplicants.size(); i++) {
@@ -33,7 +33,7 @@ public class Main {
 
         // --- 4. Find the Minimal Set of Prime Implicants ---
         // This function builds the chart, selects essentials, and uses backtracking.
-        Set<Integer> minimalPIIndices = QM_Minimization.getMinExpression(primeImplicants, onSet, noVars);
+        Set<Integer> minimalPIIndices = QM_Minimization_old.getMinExpression(primeImplicants, onSet, noVars);
 
         // --- 5. Display the Final Result ---
         System.out.println("--- Step 2: Final Minimized Solution ---");
