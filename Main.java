@@ -1,44 +1,46 @@
 import java.util.*;
 
+/**
+ * Main class to test the Quine-McCluskey implementation.
+ */
 public class Main {
     public static void main(String[] args) {
-        // variables: A,B,C,D → 4 variables
-        int noVars = 4;
+        // --- 1. Define the Input Problem ---
+        int noVars = 5;
+        List<Integer> onSet = Arrays.asList(0,2,4,6,9,13,21,23,25,29,31);
+        List<Integer> dontCares = Arrays.asList();
 
-        // on-set minterms
-        int[] ones = {4, 8, 10, 11, 12, 15};
+        System.out.println("Minimizing for function: f(A,B,C,D) = Σm(" + onSet + ") + d(" + dontCares + ")\n");
 
-        // don't-cares (included for merging but excluded from final coverage columns)
-        int[] dontCares = {9, 14};
+        // --- 2. Create Initial Minterms for Prime Implicant Generation ---
+        // Both the on-set and don't-care set are used in this phase.
+        List<Minterm> initialMinterms = new ArrayList<>();
+        onSet.forEach(m -> initialMinterms.add(new Minterm(m, noVars)));
+        dontCares.forEach(d -> initialMinterms.add(new Minterm(d, noVars)));
 
-        // build initial list: include on-set and don't-cares for the merging phase
-        List<Minterm> initial = new ArrayList<>();
-        for (int m : ones) initial.add(new Minterm(m, noVars));
-        for (int d : dontCares) initial.add(new Minterm(d, noVars));
+        // --- 3. Generate All Prime Implicants ---
+        List<Minterm> primeImplicants = QM_Minimization.getPrimeImplicants(initialMinterms);
 
-        // compute prime implicants
-        List<Minterm> primeImplicants = QM_Minimization.getPrimeImplicants(initial);
-
-        // print prime implicants (pattern and covered minterms)
-        System.out.println("Prime Implicants:");
-        for (Minterm pi : primeImplicants) {
-            System.out.println("  " + pi.s + "  covers " + pi.mintermNos);
+        System.out.println("--- Step 1: All Prime Implicants Found ---");
+        for (int i = 0; i < primeImplicants.size(); i++) {
+            Minterm pi = primeImplicants.get(i);
+            // Sorting the minterm numbers for consistent display
+            List<Integer> sortedMinterms = new ArrayList<>(pi.mintermNos);
+            Collections.sort(sortedMinterms);
+            System.out.println("  Index " + i + ": " + pi.s + "  (Covers original minterms: " + sortedMinterms + ")");
         }
+        System.out.println();
 
-        // If desired, filter coverage display to only the on-set (exclude don't-cares)
-        Set<Integer> onSet = new HashSet<>();
-        for (int m : ones) onSet.add(m);
+        // --- 4. Find the Minimal Set of Prime Implicants ---
+        // This function builds the chart, selects essentials, and uses backtracking.
+        Set<Integer> minimalPIIndices = QM_Minimization.getMinExpression(primeImplicants, onSet, noVars);
 
-        System.out.println("\nPrime Implicants (coverage restricted to on-set):");
-        for (Minterm pi : primeImplicants) {
-            List<Integer> coverOnSet = new ArrayList<>();
-            for (int x : pi.mintermNos) if (onSet.contains(x)) coverOnSet.add(x);
-            if (!coverOnSet.isEmpty()) {
-                System.out.println("  " + pi.s + "  covers " + coverOnSet);
-            }
+        // --- 5. Display the Final Result ---
+        System.out.println("--- Step 2: Final Minimized Solution ---");
+        System.out.println("The minimal solution requires the following prime implicants (by index): " + minimalPIIndices + "\n");
+        System.out.println("Corresponding Boolean Expression Terms:");
+        for (int index : minimalPIIndices) {
+            System.out.println("  " + primeImplicants.get(index).s);
         }
-
-        // Note: Next step would be to build the prime implicant chart and select essentials.
-        // The sample here only demonstrates invoking getPrimeImplicants on the given example.
     }
 }

@@ -100,6 +100,10 @@ class Minterm {
 }
 public class QM_Minimization {
     
+    private static class BestCover 
+    {
+        Set<Integer> solution = null;
+    }
     public static List<Minterm> getPrimeImplicants(List<Minterm> minterms) {
         if (minterms.isEmpty()) {
             return new ArrayList<>();
@@ -174,19 +178,59 @@ public class QM_Minimization {
         Set<Integer> chosenPIs = reduceByEssentials(chart, remMinterms);
 
         // If some minterms still remain uncovered, using some trial and error
-        // if(!remMinterms.isEmpty())
-        // {
-        //     Set<Integer> cover = findMinCover(chart, remMinterms);
-        //     chosenPIs.addAll(cover);
-        // }        
+        if(!remMinterms.isEmpty())
+        {
+            Set<Integer> cover = findMinCover(chart, remMinterms);
+            chosenPIs.addAll(cover);
+        }        
         
         return chosenPIs;
     }
 
+    // uses backtracking and pruning to find best expression 
     private static Set<Integer> findMinCover(Map<Integer, List<Integer>> chart, Set<Integer> remMinterms) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findMinCover'");
+        
+        BestCover best = new BestCover();
+        backtrack(new HashSet<>(), new HashSet<>(remMinterms), chart, best);
+
+        return best.solution != null ? best.solution : new HashSet<>();
     }
+
+    private static void backtrack(Set<Integer> currCover, Set<Integer> remMinterms, Map<Integer, List<Integer>> chart, BestCover best) {
+
+        if(remMinterms.isEmpty())
+        {
+            // check if it is optimal 
+            if(best.solution == null || currCover.size() < best.solution.size())
+            {
+                best.solution = new HashSet<>(currCover);
+            }
+            return;
+        }
+
+        // Prune 
+        if(best.solution != null && currCover.size() >= best.solution.size())
+            return;
+
+        int firstMinterm = remMinterms.iterator().next();
+        List<Integer> candidatePIs = new ArrayList<>();
+        for(Map.Entry<Integer, List<Integer>> entry : chart.entrySet())
+        {
+            if(entry.getValue().contains(firstMinterm))
+                candidatePIs.add(entry.getKey());
+        }
+
+        for(int pi : candidatePIs)
+        {
+            Set<Integer> nextCover = new HashSet<>(currCover);
+            nextCover.add(pi);
+
+            Set<Integer> nextRem = new HashSet<>(remMinterms);
+            nextRem.removeAll(chart.get(pi));
+
+            backtrack(nextCover, nextRem, chart, best);
+        }
+    }   
 
     static Set<Integer> reduceByEssentials(Map<Integer, List<Integer>> chart, Set<Integer> remMinterms)
     {
