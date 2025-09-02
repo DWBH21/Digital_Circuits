@@ -2,12 +2,12 @@ import java.util.*;
 
 class Minterm {
     String s;
-    List<Integer> mintermNos;
+    Set<Integer> mintermNos;
     Minterm() {
         s = new String();
-        mintermNos = new ArrayList<>();
+        mintermNos = new HashSet<>();
     }
-    Minterm(String s, List<Integer> mintermNos) {
+    Minterm(String s, Set<Integer> mintermNos) {
         this.s = s;
         this.mintermNos = mintermNos;
     }
@@ -19,7 +19,7 @@ class Minterm {
             tempNum >>>= 1;
         }
         this.s = sb.reverse().toString();
-        this.mintermNos = new ArrayList<>();
+        this.mintermNos = new HashSet<>();
         mintermNos.add(num);
     }
     @Override
@@ -74,11 +74,8 @@ class Minterm {
             }
         }
         
-        Set<Integer> uniqueMinterms = new HashSet<>(this.mintermNos);
-        uniqueMinterms.addAll(m.mintermNos);
-        List<Integer> newMintermNos = new ArrayList<>(uniqueMinterms);
-        Collections.sort(newMintermNos);
-        
+        Set<Integer> newMintermNos = new HashSet<>(this.mintermNos);
+        newMintermNos.addAll(m.mintermNos);
         return new Minterm(sb.toString(), newMintermNos);
     }
 }
