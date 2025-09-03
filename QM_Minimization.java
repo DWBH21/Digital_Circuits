@@ -1,7 +1,5 @@
 import java.util.*;
 
-import raw.Minterm;
-
 public class QM_Minimization {
     
     private static class BestCover 
