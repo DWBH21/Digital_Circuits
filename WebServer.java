@@ -10,6 +10,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import raw.Minterm;
+
 public class WebServer {
 
     public static void main(String[] args) throws IOException {

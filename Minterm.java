@@ -1,5 +1,7 @@
 
 import java.util.*;
+
+import raw.Minterm;
 public class Minterm {
     String s;
     Set<Integer> mintermNos;

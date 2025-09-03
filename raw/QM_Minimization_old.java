@@ -1,3 +1,4 @@
+package raw;
 import java.util.*;
 
 class Minterm {
