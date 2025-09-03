@@ -199,6 +199,30 @@
             font-size: 0.875rem;
             padding: 0.5rem;
         }
+        .code-container {
+            position: relative;
+            background-color: #2d2d2d;
+            color: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .code-container pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4b5563;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -251,6 +275,28 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Verilog Generation -->
+            <div class="solution-wrapper" style="margin-top: 2rem;">
+                <button onclick="generateVerilog()">Generate Verilog</button>
+                <div id="verilog-output" class="hidden" style="width: 100%;">
+                    <div class="output-section">
+                        <h3>Verilog Module</h3>
+                        <div class="code-container">
+                            <button class="copy-btn" onclick="copyToClipboard(event, 'verilog-code')">Copy</button>
+                            <pre id="verilog-code"></pre>
+                        </div>
+                    </div>
+                    <div class="output-section">
+                        <h3>Verilog Testbench</h3>
+                        <div class="code-container">
+                            <button class="copy-btn" onclick="copyToClipboard(event, 'testbench-code')">Copy</button>
+                            <pre id="testbench-code"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -478,7 +524,6 @@
                 //             cell.style.backgroundColor = color + '30'; // Add transparency
                 //         }
                 //     });
-                    
                 //     colorIndex++;
                 // }
 
@@ -486,6 +531,85 @@
                 sopOut.innerHTML = `<span style="color: #ef4444;">Error: Could not connect to the local solver. Is the Java server running?</span>`;
                 console.error('Error solving K-map:', error);
             }
+        }
+
+        function generateVerilog() {
+            const sop = sopOut.textContent;
+            if (!sop || sop.startsWith('Error') || sop.startsWith('Solve')) {
+                alert("Please solve the K-map first to get a valid SOP expression.");
+                return;
+            }
+
+            document.getElementById('verilog-output').classList.remove('hidden');
+            const varNames = Array.from({length: n}, (_, i) => String.fromCharCode(65 + i));
+            const inputs = varNames.join(', ');
+
+            // Verilog Module
+            let sopForVerilog;
+
+            if (sop === '1') {
+                sopForVerilog = "1'b1";
+            } else if (sop === '0') {
+                sopForVerilog = "1'b0";
+            } else {
+                const parseTerm = (term) => {
+                    let literals = [];
+                    for (let i = 0; i < term.length; i++) {
+                        const char = term[i];
+                        if (i + 1 < term.length && term[i+1] === "'") {
+                            literals.push(`(~${char})`);
+                            i++; // Skip the apostrophe
+                        } else {
+                            literals.push(char);
+                        }
+                    }
+                    if (literals.length > 1) {
+                        return `(${literals.join(' & ')})`;
+                    }
+                    return literals.join(' & '); // Handles single literal terms
+                };
+
+                const terms = sop.split(' + ');
+                const verilogTerms = terms.map(parseTerm);
+                sopForVerilog = verilogTerms.join(' | ');
+            }
+
+            const verilogModule = `module boolean_expression(\n  output F,\n  input  ${inputs}\n);\n\n  assign F = ${sopForVerilog};\n\nendmodule`;
+            document.getElementById('verilog-code').textContent = verilogModule;
+
+            // Verilog Testbench
+            const regs = varNames.map(v => `reg ${v};`).join('\n  ');
+            const wires = 'wire F;';
+            const dut = `boolean_expression dut(F, ${inputs});`;
+            
+            const reversedVarNames = [...varNames].reverse().join(', ');
+            const varVector = `{${reversedVarNames}}`;
+            const numCombinations = Math.pow(2, n);
+
+            let initialBlock = `  integer i;\n  initial begin\n`;
+            initialBlock += `    for (i = 0; i < ${numCombinations}; i = i + 1) begin\n`;
+            initialBlock += `      ${varVector} = i;\n`;
+            initialBlock += `      #10;\n`;
+            initialBlock += `    end\n`;
+            initialBlock += `    $finish;\n  end`;
+
+            const monitorFormat = varNames.map(v => `${v}=%b`).join(', ');
+            const monitorVars = varNames.join(', ');
+            const monitor = `  initial begin\n    $monitor("${monitorFormat}, \tF=%b", ${monitorVars}, F);\n  end`;
+
+            const testbench = `module testbench;\n\n  ${regs}\n  ${wires}\n\n  ${dut}\n\n${initialBlock}\n\n${monitor}\n\nendmodule`;
+            document.getElementById('testbench-code').textContent = testbench;
+        }
+
+        function copyToClipboard(event, elementId) {
+            const code = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const button = event.target;
+                button.textContent = 'Copied!';
+                setTimeout(() => { button.textContent = 'Copy'; }, 2000);
+            }, (err) => {
+                console.error('Could not copy text: ', err);
+            });
         }
     </script>
 </body>
