@@ -61,16 +61,23 @@ public class WebServer {
                 for (int m : onSet) initial.add(new Minterm(m, noVars));
                 for (int d : dontCares) initial.add(new Minterm(d, noVars));
                 List<Minterm> primeImplicants = QM_Minimization.getPrimeImplicants(initial);
-
-                // Cover on-set only
                 Set<Integer> chosenPIIdx = QM_Minimization.getMinExpression(primeImplicants, onSet, noVars);
 
-                // Build SOP and grouping info
+                List<Integer> zeroSet = computeZeros(onSet, dontCares, noVars);
+                List<Minterm> zeroInitial = new ArrayList<>();
+                
+                for (int m : zeroSet) zeroInitial.add(new Minterm(m, noVars));
+                for (int d : dontCares) zeroInitial.add(new Minterm(d, noVars));
+                List<Minterm> zeroPrimeImplicants = QM_Minimization.getPrimeImplicants(zeroInitial);
+                Set<Integer> zeroChosenPIIdx = QM_Minimization.getMinExpression(zeroPrimeImplicants, zeroSet, noVars);
+
+                // Build SOP and POS and grouping info
                 char[] vars = "ABCDE".toCharArray();
                 String sop = toSOP(chosenPIIdx, primeImplicants, vars);
+                String pos = toPOS(zeroChosenPIIdx, zeroPrimeImplicants, vars);
                 String groupsJson = toGroupsJson(chosenPIIdx, primeImplicants);
 
-                String response = "{\"sop\":\"" + escapeJson(sop) + "\",\"groups\":" + groupsJson + "}";
+                String response = "{\"sop\":\"" + escapeJson(sop) + "\",\"pos\":\"" + escapeJson(pos) + "\",\"groups\":" + groupsJson + "}";
                 byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, bytes.length);
@@ -86,6 +93,19 @@ public class WebServer {
                     os.write(bytes);
                 }
             }
+        }
+
+        List<Integer> computeZeros(List<Integer> onSet, List<Integer> dontCares, int noVars) {
+            Set<Integer> allMinterms = new HashSet<>();
+            int totalMinterms = 1 << noVars; 
+            for (int i = 0; i < totalMinterms; i++) {
+                allMinterms.add(i);
+            }
+            
+            allMinterms.removeAll(onSet);
+            allMinterms.removeAll(dontCares);
+            
+            return new ArrayList<>(allMinterms);
         }
 
         // Minimal JSON parsing for {"noVars":N,"onSet":[...],"dontCares":[...]}
@@ -168,6 +188,35 @@ public class WebServer {
                 terms.add(term.length() == 0 ? "1" : term.toString());
             }
             return terms.isEmpty() ? "0" : String.join(" + ", terms);
+        }
+
+        private String toPOS(Set<Integer> rows, List<Minterm> pis, char[] varNames) {
+            List<String> terms = new ArrayList<>();
+            for (int r : rows) {
+                String p = pis.get(r).s;
+                StringBuilder term = new StringBuilder();
+                boolean hasVars = false;
+                
+                for (int i = 0; i < p.length(); i++) {
+                    if (p.charAt(i) == '-') continue;
+                    
+                    if (hasVars) term.append(" + ");
+                    
+                    if (p.charAt(i) == '0') {
+                        term.append(varNames[i]);
+                    } else {
+                        term.append(varNames[i]).append("'");
+                    }
+                    hasVars = true;
+                }
+                
+                if (!hasVars) {
+                    terms.add("(0)");
+                } else {
+                    terms.add("(" + term.toString() + ")");
+                }
+            }
+            return terms.isEmpty() ? "1" : String.join(" · ", terms);
         }
 
         private String toGroupsJson(Set<Integer> rows, List<Minterm> pis) {

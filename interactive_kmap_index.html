@@ -247,7 +247,7 @@
                     </div>
                     <h3>Simplified POS Equation</h3>
                     <div id="pos-equation" class="equation-box">
-                        <span style="color: #6b7280;">POS not included in this version.</span>
+                        <span style="color: #6b7280;">Solve the K-map to see the equation.</span>
                     </div>
                 </div>
             </div>
@@ -264,6 +264,7 @@
         const tTable = document.getElementById('truth-table');
         const kmapDiv = document.getElementById('kmap-container');
         const sopOut = document.getElementById('sop-equation');
+        const posOut = document.getElementById('pos-equation');
         const mainDiv = document.getElementById('main-content');
         let n = 4;
         let outputs = [];
@@ -454,31 +455,32 @@
 
                 // Update the UI with the solution
                 sopOut.textContent = result.sop || '1';
+                posOut.textContent = result.pos || '1';
+                
+                // // Clear all previous highlights
+                // cellsByIndex.forEach(cell => {
+                //     cell.style.border = '1px solid #d1d5db';
+                //     cell.style.backgroundColor = '#fff';
+                // });
 
-                // Clear all previous highlights
-                cellsByIndex.forEach(cell => {
-                    cell.style.border = '1px solid #d1d5db';
-                    cell.style.backgroundColor = '#fff';
-                });
+                // // Apply highlighting for each group using different colors
+                // const groupColors = ['#e57373', '#81c784', '#64b5f6', '#fff176', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292'];
+                // let colorIndex = 0;
 
-                // Apply highlighting for each group using different colors
-                const groupColors = ['#e57373', '#81c784', '#64b5f6', '#fff176', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292'];
-                let colorIndex = 0;
-
-                for (const groupKey in result.groups) {
-                    const mintermsInGroup = result.groups[groupKey];
-                    const color = groupColors[colorIndex % groupColors.length];
+                // for (const groupKey in result.groups) {
+                //     const mintermsInGroup = result.groups[groupKey];
+                //     const color = groupColors[colorIndex % groupColors.length];
                     
-                    mintermsInGroup.forEach(mintermIndex => {
-                        const cell = cellsByIndex.get(mintermIndex);
-                        if (cell) {
-                            cell.style.border = `3px solid ${color}`;
-                            cell.style.backgroundColor = color + '30'; // Add transparency
-                        }
-                    });
+                //     mintermsInGroup.forEach(mintermIndex => {
+                //         const cell = cellsByIndex.get(mintermIndex);
+                //         if (cell) {
+                //             cell.style.border = `3px solid ${color}`;
+                //             cell.style.backgroundColor = color + '30'; // Add transparency
+                //         }
+                //     });
                     
-                    colorIndex++;
-                }
+                //     colorIndex++;
+                // }
 
             } catch (error) {
                 sopOut.innerHTML = `<span style="color: #ef4444;">Error: Could not connect to the local solver. Is the Java server running?</span>`;
