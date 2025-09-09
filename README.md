@@ -28,8 +28,8 @@ cd Digital_Circuits
 ```
 ### 2. Compile and run WebServer.java
 ```
-javac Webserver.java
-java Webserver
+javac WebServer.java
+java WebServer
 ```
 It will display the following on successful execution
 ```
