@@ -35,7 +35,9 @@ function generateTable() {
         for (let j = 0; j < n; j++) {
             body += `<td>${binary[j]}</td>`;
         }
-        body += `<td><select onchange="updateOutput(${i}, this.value)">
+        
+        // Added a unique ID to the select element
+        body += `<td><select id="output-tt-${i}" onchange="updateOutput(${i}, this.value)">
             <option value="0">0</option>
             <option value="1">1</option>
             <option value="X">X</option>
@@ -151,9 +153,10 @@ function cycleKmapCell(mintermIndex) {
     
     outputs[mintermIndex] = nextValue;
     
-    const truthTableRow = tTable.querySelector(`tbody tr:nth-child(${mintermIndex + 1})`);
-    if (truthTableRow) {
-        truthTableRow.querySelector('select').value = nextValue;
+    // Use the new ID to find the select element directly
+    const selectElement = document.getElementById(`output-tt-${mintermIndex}`);
+    if (selectElement) {
+        selectElement.value = nextValue;
     }
     
     generateKmapGrid();
@@ -161,6 +164,7 @@ function cycleKmapCell(mintermIndex) {
 
 async function solveKmap() {
     sopOut.innerHTML = '<span style="color: #6b7280;">Solving...</span>';
+    posOut.innerHTML = '<span style="color: #6b7280;">Solving...</span>'; // Added this for consistency
 
     // Gather the on-set and don't-care minterms from the UI
     const onSet = [];
@@ -200,32 +204,17 @@ async function solveKmap() {
         sopOut.textContent = result.sop || '1';
         posOut.textContent = result.pos || '1';
         
-        // // Clear all previous highlights
-        // cellsByIndex.forEach(cell => {
-        //     cell.style.border = '1px solid #d1d5db';
-        //     cell.style.backgroundColor = '#fff';
-        // });
+        // 1. Fetch the circuit diagram from the Python server
+        fetchAndDisplaySOPCircuit(result.sop);
+        fetchAndDisplayPOSCircuit(result.pos);
 
-        // // Apply highlighting for each group using different colors
-        // const groupColors = ['#e57373', '#81c784', '#64b5f6', '#fff176', '#ffb74d', '#ba68c8', '#4db6ac', '#f06292'];
-        // let colorIndex = 0;
-
-        // for (const groupKey in result.groups) {
-        //     const mintermsInGroup = result.groups[groupKey];
-        //     const color = groupColors[colorIndex % groupColors.length];
-            
-        //     mintermsInGroup.forEach(mintermIndex => {
-        //         const cell = cellsByIndex.get(mintermIndex);
-        //         if (cell) {
-        //             cell.style.border = `3px solid ${color}`;
-        //             cell.style.backgroundColor = color + '30'; // Add transparency
-        //         }
-        //     });
-        //     colorIndex++;
-        // }
-
+        // 2. Get waveform data string and fetch the diagram
+        const waveformString = getWaveformString();
+        fetchAndDisplayWaveform(waveformString);
+        
     } catch (error) {
-        sopOut.innerHTML = `<span style="color: #ef4444;">Error: Could not connect to the local solver. Is the Java server running?</span>`;
+        sopOut.innerHTML = `<span style="color: #ef4444;">Error: Could not connect to a server. Are the Java AND Python servers running?</span>`;
+        posOut.innerHTML = `<span style="color: #ef4444;">Error: ${error.message}</span>`;
         console.error('Error solving K-map:', error);
     }
 }
@@ -307,4 +296,134 @@ function copyToClipboard(event, elementId) {
     }, (err) => {
         console.error('Could not copy text: ', err);
     });
+}
+
+// Fetches the circuit diagram from the Python server.
+async function fetchAndDisplaySOPCircuit(sopString) {
+    const imgElement = document.getElementById('sop-circuit-image');
+    imgElement.src = ''; // Clear old image
+    imgElement.alt = 'Loading SOP circuit diagram...';
+
+    if (imgElement.src && imgElement.src.startsWith('blob:')) {
+        URL.revokeObjectURL(imgElement.src);
+    }
+
+    try {
+        console.log(sopString);
+        const response = await fetch('http://localhost:5000/draw_sop_circuit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sop: sopString })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Circuit drawer failed with status: ${response.status}`);
+        }
+
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+        imgElement.src = imageUrl;
+        imgElement.alt = 'SOP Circuit Diagram';
+    } catch (error) {
+        console.error('Error drawing SOP circuit:', error);
+        imgElement.alt = 'Error loading SOP circuit diagram. Is the Python server running?';
+    }
+}
+
+async function fetchAndDisplayPOSCircuit(posString) {
+    const imgElement = document.getElementById('pos-circuit-image');
+    imgElement.src = ''; // Clear old image
+    imgElement.alt = 'Loading POS circuit diagram...';
+
+    if (imgElement.src && imgElement.src.startsWith('blob:')) {
+        URL.revokeObjectURL(imgElement.src);
+    }
+
+    try {
+        console.log(posString);
+        const response = await fetch('http://localhost:5000/draw_pos_circuit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pos: posString })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Circuit drawer failed with status: ${response.status}`);
+        }
+
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+        imgElement.src = imageUrl;
+        imgElement.alt = 'POS Circuit Diagram';
+    } catch (error) {
+        console.error('Error drawing POS circuit:', error);
+        imgElement.alt = 'Error loading POS circuit diagram. Is the Python server running?';
+    }
+}
+
+// Fetches the waveform diagram from the Python server.
+async function fetchAndDisplayWaveform(signalData) {
+    const imgElement = document.getElementById('waveform-image');
+    
+    if (imgElement.src && imgElement.src.startsWith('blob:')) {
+        URL.revokeObjectURL(imgElement.src);
+    }
+    
+    imgElement.src = ''; // Clear old image
+    imgElement.alt = 'Loading waveform diagram...';
+
+    
+    try {
+        console.log(signalData);
+        const response = await fetch('http://localhost:5000/draw_waveform', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signals: signalData })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Waveform drawer failed with status: ${response.status}`);
+        }
+
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+        imgElement.src = imageUrl;
+        imgElement.alt = 'Waveform Diagram';
+    } catch (error) {
+        console.error('Error drawing waveform:', error);
+        imgElement.alt = 'Error loading waveform diagram. Is the Python server running?';
+    }
+}
+
+// Gather data from the truth table and format it for schemdraw.
+function getWaveformString() {
+    const numVars = parseInt(document.getElementById('num-variables').value);
+    const varNames = ['A', 'B', 'C', 'D', 'E'].slice(0, numVars);
+    const numRows = Math.pow(2, numVars);
+    
+    let signals = {};
+    varNames.forEach(name => signals[name] = '');
+    signals['F'] = '';
+
+    for (let i = 0; i < numRows; i++) {
+        for (let j = 0; j < numVars; j++) {
+            const varName = varNames[j];
+            const bit = (i >> (numVars - 1 - j)) & 1;
+            signals[varName] += bit.toString();
+        }
+    }
+
+    for (let i = 0; i < numRows; i++) {
+        const outputSelect = document.getElementById(`output-tt-${i}`); 
+        let val = '0';
+        if (outputSelect) {
+            val = outputSelect.value;
+        }
+        if (val === 'X') val = '?';
+        signals['F'] += val;
+    }
+
+    return Object.entries(signals)
+                 .map(([name, wave]) => `${name}: ${wave}`)
+                 .join(', ');
 }
