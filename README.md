@@ -39,7 +39,6 @@ java WebServer
 It will display the following on successful execution
 ```
 Server started on port 8080
-Open the HTML file in your browser and press Solve K-Map.
 ```
 
 ### 3. Run app.py - (Starts the Python Backend)

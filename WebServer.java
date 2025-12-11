@@ -19,7 +19,6 @@ public class WebServer {
         server.setExecutor(null);
         server.start();
         System.out.println("Server started on port " + port);
-        System.out.println("Open the HTML file in your browser and press Solve K-Map.");
     }
 
     static class SolveHandler implements HttpHandler {
